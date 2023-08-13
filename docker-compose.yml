@@ -1,0 +1,48 @@
+version: '3'
+
+volumes:
+  pg_data:
+  pgadmin-data:
+
+services:
+  db_postgres:
+    container_name: db_postgres_container
+    image: postgres:14-alpine
+    env_file: .env
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "15432:5432"
+    restart: unless-stopped
+
+
+  pgadmin:
+    container_name: pgadmin_container
+    image: dpage/pgadmin4:7.3
+    env_file: .env
+    environment:
+#      PGADMIN_DEFAULT_EMAIL: "maniac_kaa@mail.ru"
+#      PGADMIN_DEFAULT_PASSWORD: "view"
+      PGADMIN_DEFAULT_EMAIL: $PGADMIN_DEFAULT_EMAIL
+      PGADMIN_DEFAULT_PASSWORD: $PGADMIN_DEFAULT_PASSWORD
+
+    depends_on:
+      - db_postgres
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+
+
+  bot:
+    restart: always
+    build: .
+    env_file: .env
+    depends_on:
+      - db_postgres
