@@ -134,7 +134,7 @@ def get_user_subscribe_text(tg_id) -> str:
             user: User = session.query(User).filter(User.tg_id == str(tg_id)).first()
             subscribes: list[Subscribe] = user.subscribes
             if subscribes:
-                text = 'Ваши акnивные подписки:\n'
+                text = 'Ваши активные подписки:\n'
                 for subscribe in subscribes:
                     expire: datetime.datetime = subscribe.expire
                     expired = expire.strftime("%d.%m.%Y")

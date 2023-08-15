@@ -34,6 +34,27 @@ class FSMPay(StatesGroup):
 @router.callback_query(Text(text='pay'))
 async def pay(callback: CallbackQuery, state: FSMContext, bot: Bot):
     await callback.message.delete()
+    # Выбор подписки для продления:
+    text = 'Выберите канал для продления подписки:\n'
+    channels = get_channels()
+    text_channels = [
+        f'<b>{ch.title}</b>\n{ch.description}\n\n'
+        for ch in channels]
+    text += ''.join(text_channels)
+    channels = get_channels()
+    channel_kb_btn = {}
+    for channel in channels:
+        channel_kb_btn[channel.title] = f'channel:{channel.id}'
+    channel_kb = custom_kb(1, channel_kb_btn)
+    await callback.message.answer('Выберите канал',
+                                  reply_markup=channel_kb)
+
+
+@router.callback_query(Text(startswith='channel:'))
+async def pay(callback: CallbackQuery, state: FSMContext, bot: Bot):
+    await state.set_state(FSMPay.select_channel)
+    channel_pk = int(callback.data.split('channel:')[1])
+    await state.update_data(channel_pk=channel_pk)
     await callback.message.answer('На какой срок хотите купить подписку?', reply_markup=pay_kb1)
 
 
@@ -56,16 +77,9 @@ async def pay(callback: CallbackQuery, state: FSMContext, bot: Bot):
     await callback.message.delete()
 
 
-@router.callback_query(Text(text='cancel'))
-async def pay(callback: CallbackQuery, state: FSMContext, bot: Bot):
-    await state.clear()
-    await callback.message.delete()
-    await callback.message.answer(LEXICON_RU['start_text'],
-                                  reply_markup=start_kb)
-
-
 @router.callback_query(Text(text='check_pay'))
 async def pay(callback: CallbackQuery, state: FSMContext, bot: Bot):
+    data = await state.get_data()
     prices = list(TARIFFS.values())
     print(prices)
     days = list(TARIFFS.keys())
@@ -92,37 +106,11 @@ async def pay(callback: CallbackQuery, state: FSMContext, bot: Bot):
         if user.referral:
             logger.debug(f'Есть реферал: {user.referral}')
             update_referral_buy(user)
-        # Выбор подписки для продления:
-        text = 'Выберите канал для продления подписки:\n'
-        channels = get_channels()
-        text_channels = [
-            f'<b>{ch.title}</b>\n{ch.description}\n\n'
-            for ch in channels]
-        text += ''.join(text_channels)
-        channels = get_channels()
-        channel_kb_btn = {}
-        for channel in channels:
-            channel_kb_btn[channel.title] = f'channel:{channel.id}'
-        channel_kb = custom_kb(1, channel_kb_btn)
-        await callback.message.answer(text, reply_markup=channel_kb)
         await state.set_state(FSMPay.select_channel)
         await state.update_data(tarif=tarif)
+        # Отправялем ссылку
 
-    else:
-        await callback.message.answer('Транзакция не найдена')
-        data = await state.get_data()
-        text = data.get('text')
-        await callback.message.answer(text, parse_mode='HTML',
-                                      reply_markup=pay_kb2)
-        await callback.message.delete()
-
-
-@router.callback_query(Text(startswith='channel:'))
-async def pay(callback: CallbackQuery, state: FSMContext, bot: Bot):
-    data = await state.get_data()
-    tarif = data.get('tarif')
-    if tarif:
-        channel_pk = int(callback.data.split('channel:')[1])
+        channel_pk = data['channel_pk']
         print(channel_pk)
         days = list(TARIFFS.keys())[tarif - 1]
         subscribe, channel = update_subscribe(check_user(callback.from_user.id), channel_pk, days)
@@ -140,5 +128,19 @@ async def pay(callback: CallbackQuery, state: FSMContext, bot: Bot):
                f'Ваша ссылка: {link.invite_link}'
         await callback.message.delete()
         await callback.message.answer(text)
+
     else:
-        await callback.message.answer('Произошла ошибка')
+        await callback.message.answer('Транзакция не найдена')
+        data = await state.get_data()
+        text = data.get('text')
+        await callback.message.answer(text, parse_mode='HTML',
+                                      reply_markup=pay_kb2)
+        await callback.message.delete()
+
+
+@router.callback_query(Text(text='cancel'))
+async def pay(callback: CallbackQuery, state: FSMContext, bot: Bot):
+    await state.clear()
+    await callback.message.delete()
+    await callback.message.answer(LEXICON_RU['start_text'],
+                                  reply_markup=start_kb)
