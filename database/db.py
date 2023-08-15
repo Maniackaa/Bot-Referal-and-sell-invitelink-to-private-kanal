@@ -123,6 +123,8 @@ with Session() as session:
                 description='Описание тестового канла',
                 is_active=1,
             )
+            session.add(channel1)
+            session.commit()
     except Exception as err:
         print(err)
 

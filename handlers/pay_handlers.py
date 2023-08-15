@@ -79,7 +79,6 @@ async def pay(callback: CallbackQuery, state: FSMContext, bot: Bot):
             tarif = tarif_num
         else:
             print(tarif_num, 'Транзакция НЕ найдена')
-    tarif = 1
     if tarif:
         await callback.message.answer('Ваша оплата прошла успешно')
         await callback.message.delete()
