@@ -99,12 +99,11 @@ def get_channel_from_id(pk) -> Channel:
         return channel
 
 
-def update_subscribe(user: User, channel_pk: int, tarif: int) -> tuple[Subscribe, Channel]:
+def update_subscribe(user: User, channel_pk: int, days: int) -> tuple[Subscribe, Channel]:
     """"Обновляет в базе подписку"""
-    logger.debug(f'update_subscribe {user} Канал: {channel_pk} Тариф: {tarif}')
+    logger.debug(f'update_subscribe {user} Канал: {channel_pk} Дней: {days}')
     with Session() as session:
         try:
-            days = list(TARIFFS.keys())[tarif - 1]
             subscribe: Subscribe = session.query(Subscribe).filter(
                 Subscribe.user_id == user.id, Subscribe.channel_id == channel_pk).one_or_none()
             now = datetime.datetime.now(tz=tz).replace(tzinfo=None)

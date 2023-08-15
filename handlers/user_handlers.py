@@ -15,7 +15,7 @@ import logging.config
 from keyboards.keyboards import start_kb, custom_kb
 from lexicon.lexicon import LEXICON_RU
 from services.db_func import create_user, check_user, get_channels, \
-    get_user_subscribe_text
+    get_user_subscribe_text, update_subscribe
 from services.referal import add_referal_count
 
 logging.config.dictConfig(LOGGING_CONFIG)
@@ -52,6 +52,7 @@ async def get_demo(callback: CallbackQuery, state: FSMContext, bot: Bot):
     if user.demo_used:
         await callback.message.answer('Вы уже использовали демо-доступ')
     else:
+        user.set('demo_used', 1)
         channels = get_channels()
         for channel in channels:
             link: ChatInviteLink = await bot.create_chat_invite_link(
@@ -70,14 +71,15 @@ async def get_demo(callback: CallbackQuery, state: FSMContext, bot: Bot):
             await bot.unban_chat_member(chat_id=conf.tg_bot.GROUP_ID,
                                         user_id=callback.from_user.id,
                                         only_if_banned=True)
-            user.set('member_expire', link.expire_date)
-            user.set('demo_used', 1)
+            # user.set('demo_expire', link.expire_date)
+            update_subscribe(user, channel.id, 1)
+
+
     await callback.message.delete()
 
 
 @router.callback_query(Text(text='check_expire'))
 async def check_expire(callback: CallbackQuery, state: FSMContext, bot: Bot):
-    user = check_user(callback.from_user.id)
     subscribes_text = get_user_subscribe_text(callback.from_user.id)
     await callback.message.answer(subscribes_text)
 

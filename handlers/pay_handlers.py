@@ -141,7 +141,8 @@ async def pay(callback: CallbackQuery, state: FSMContext, bot: Bot):
     if tarif:
         channel_pk = int(callback.data.split('channel:')[1])
         print(channel_pk)
-        subscribe, channel = update_subscribe(check_user(callback.from_user.id), channel_pk, tarif)
+        days = list(TARIFFS.keys())[tarif - 1]
+        subscribe, channel = update_subscribe(check_user(callback.from_user.id), channel_pk, days)
         await state.clear()
         user = check_user(callback.from_user.id)
         await bot.unban_chat_member(chat_id=channel.channel_id,
