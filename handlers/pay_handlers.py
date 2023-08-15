@@ -108,23 +108,6 @@ async def pay(callback: CallbackQuery, state: FSMContext, bot: Bot):
         await state.set_state(FSMPay.select_channel)
         await state.update_data(tarif=tarif)
 
-        # Определяем срок ссылки
-        # if user.member_expire:
-        #     new_expire = user.member_expire + datetime.timedelta(days=days[tarif - 1])
-        # else:
-        #     new_expire = datetime.datetime.now(tz=conf.tg_bot.TIMEZONE) + datetime.timedelta(days=days[tarif - 1])
-        # user.set('member_expire', new_expire)
-        # await bot.unban_chat_member(chat_id=conf.tg_bot.GROUP_ID,
-        #                             user_id=callback.from_user.id,
-        #                             only_if_banned=True)
-        # link: ChatInviteLink = await bot.create_chat_invite_link(
-        #     chat_id=conf.tg_bot.GROUP_ID,
-        #     creates_join_request=False,
-        #     expire_date=new_expire,
-        #     member_limit=1)
-        # await callback.message.answer(f'Ваша ссылка (до {link.expire_date.astimezone(tz=conf.tg_bot.TIMEZONE)}):\n{link.invite_link}')
-
-
     else:
         await callback.message.answer('Транзакция не найдена')
         data = await state.get_data()

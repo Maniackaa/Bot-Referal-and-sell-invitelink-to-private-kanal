@@ -171,22 +171,6 @@ async def delete_subscribe_and_ban(expire: Subscribe, bot):
             err_log.error('Ошибка при отписке', exc_info=True)
 
 
-# def get_subscribe_text():
-
-    # if user.member_expire:
-    #     new_expire = user.member_expire + datetime.timedelta(days=days[tarif - 1])
-    # else:
-    #     new_expire = datetime.datetime.now(tz=conf.tg_bot.TIMEZONE) + datetime.timedelta(days=days[tarif - 1])
-    # user.set('member_expire', new_expire)
-    # await bot.unban_chat_member(chat_id=conf.tg_bot.GROUP_ID,
-    #                             user_id=callback.from_user.id,
-    #                             only_if_banned=True)
-    # link: ChatInviteLink = await bot.create_chat_invite_link(
-    #     chat_id=conf.tg_bot.GROUP_ID,
-    #     creates_join_request=False,
-    #     expire_date=new_expire,
-    #     member_limit=1)
-
 if __name__ == '__main__':
     pass
 
