@@ -22,7 +22,7 @@ def add_num_to_used_nums(num: int):
         r.set(key, value)
         logger.debug(f'Добавлено {key} {value}')
     except Exception as err:
-        logger.error(f'Ошибка добавления в редис', exc_info=True)
+        err_log.error(f'Ошибка добавления в редис', exc_info=True)
 
 
 def get_used_nums() -> dict:

@@ -58,7 +58,7 @@ class User(Base):
                 _session.commit()
                 logger.debug(f'Изменено значение {key} на {value}')
         except Exception as err:
-            logger.error(f'Ошибка изменения {key} на {value}')
+            err_log.error(f'Ошибка изменения {key} на {value}')
             raise err
 
     @staticmethod
@@ -73,7 +73,7 @@ class User(Base):
                     if i not in used_delta:
                         return i
         except Exception as err:
-            logger.error(f'Ошибка чтения used_delta')
+            err_log.error(f'Ошибка чтения used_delta')
             raise err
 
 
@@ -111,7 +111,19 @@ class Subscribe(Base):
 
 Base.metadata.create_all(engine)
 
-# with Session() as session:
-#     user = session.query(User).filter(User.id == 8).one()
+
+with Session() as session:
+    try:
+        channels = session.query(Channel).all()
+        print('------------------', channels)
+        if not channels:
+            channel1: Channel = Channel(
+                channel_id=-1001697211543,
+                title='Тестовый канал',
+                description='Описание тестового канла',
+                is_active=1,
+            )
+    except Exception as err:
+        print(err)
 
 

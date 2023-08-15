@@ -45,7 +45,7 @@ async def checker(bot):
                 try:
                     await delete_subscribe_and_ban(expire, bot)
                 except Exception as err:
-                    logger.error(f'Ошибка {err}')
+                    err_log.error(f'Ошибка при удалении подписки{err}', exc_info=True)
         await asyncio.sleep(1 * 60)
 
 

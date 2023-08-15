@@ -82,7 +82,7 @@ def get_new_delta(tg_id: int):
                     session.commit()
                     return i
         except Exception as err:
-            logger.error(f'Ошибка чтения used_delta')
+            err_log.error(f'Ошибка чтения used_delta')
             raise err
 
 
@@ -126,7 +126,7 @@ def update_subscribe(user: User, channel_pk: int, tarif: int) -> tuple[Subscribe
             session.commit()
             return subscribe, subscribe.channel
         except Exception as err:
-            logger.error('Ошибка при подписке')
+            err_log.error('Ошибка при подписке')
 
 
 def get_user_subscribe_text(tg_id) -> str:
@@ -147,7 +147,7 @@ def get_user_subscribe_text(tg_id) -> str:
             logger.debug(f'Подписки: {text}]')
             return text
         except Exception as err:
-            logger.error('Ошибка чтения полписок')
+            err_log.error('Ошибка чтения полписок')
 
 
 async def delete_subscribe_and_ban(expire: Subscribe, bot):
@@ -169,7 +169,7 @@ async def delete_subscribe_and_ban(expire: Subscribe, bot):
                                    reply_markup=start_kb)
             logger.debug(f'Пользователь {user.tg_id} удален')
         except Exception as err:
-            logger.error('Ошибка при отписке', exc_info=True)
+            err_log.error('Ошибка при отписке', exc_info=True)
 
 
 # def get_subscribe_text():
