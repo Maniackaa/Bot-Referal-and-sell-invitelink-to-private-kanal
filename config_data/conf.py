@@ -76,8 +76,8 @@ class PostgresConfig:
 class RedisConfig:
     redis_db_num: str  # Название базы данных
     redis_host: str  # URL-адрес базы данных
-    redis_port: str  # URL-адрес базы данных
-    redis_password: str
+    REDIS_PORT: str  # URL-адрес базы данных
+    REDIS_PASSWORD: str
 
 
 @dataclass
@@ -116,8 +116,8 @@ def load_config(path: str | None) -> Config:
                   redis_db=RedisConfig(
                       redis_db_num=env('redis_db_num'),
                       redis_host=env('redis_host'),
-                      redis_port=env('redis_port'),
-                      redis_password=env('redis_password'),
+                      REDIS_PORT=env('REDIS_PORT'),
+                      REDIS_PASSWORD=env('REDIS_PASSWORD'),
                       ),
                   db=PostgresConfig(
                       database=env('POSTGRES_DB'),

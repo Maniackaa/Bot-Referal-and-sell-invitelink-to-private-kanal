@@ -5,7 +5,7 @@ from sqlite3 import Timestamp
 from time import time
 
 from sqlalchemy import create_engine, ForeignKey, Date, String, DateTime, \
-    Float, UniqueConstraint, Integer, MetaData
+    Float, UniqueConstraint, Integer, MetaData, BigInteger
 from sqlalchemy.orm import DeclarativeBase, relationship
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
@@ -40,10 +40,11 @@ class User(Base):
     referral: Mapped[str] = mapped_column(String(20), nullable=True)
     referral_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     referral_buy_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    member_expire: Mapped[time] = mapped_column(DateTime(), nullable=True)
+    demo_expire: Mapped[time] = mapped_column(DateTime(), nullable=True)
     demo_used: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     delta_num: Mapped[int] = mapped_column(Integer, nullable=True)
     delta_end: Mapped[time] = mapped_column(DateTime(), nullable=True)
+    subscribes: Mapped[list['Subscribe']] = relationship(back_populates='user')
 
     def __repr__(self):
         return f'{self.id}. {self.tg_id} {self.username or "-"}'
@@ -76,27 +77,41 @@ class User(Base):
             raise err
 
 
+class Channel(Base):
+    __tablename__ = 'channels'
+    id: Mapped[int] = mapped_column(primary_key=True,
+                                    autoincrement=True,
+                                    comment='Первичный ключ')
+    channel_id: Mapped[int] = mapped_column(BigInteger())
+    title: Mapped[str] = mapped_column(String(50), nullable=True)
+    description: Mapped[str] = mapped_column(String(250), nullable=True)
+    is_active: Mapped[int] = mapped_column(Integer(), default=1)
+    subscribes: Mapped[list['Subscribe']] = relationship(back_populates='channel')
+
+    def __repr__(self):
+        return f'Канал {self.id}. {self.title}. Активен: {self.is_active} '
 
 
+class Subscribe(Base):
+    __tablename__ = 'subscribes'
+    __table_args__ = (
+        UniqueConstraint("channel_id", "user_id"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True,
+                                    autoincrement=True)
+    channel_id: Mapped[int] = mapped_column(ForeignKey('channels.id'))
+    channel: Mapped['Channel'] = relationship(back_populates='subscribes')
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    user: Mapped['User'] = relationship(back_populates='subscribes')
+    expire: Mapped[datetime.datetime] = mapped_column(DateTime())
+
+    def __repr__(self):
+        return f'Подписка {self.id}. Канал {self.channel_id} ({self.user_id}) до {self.expire}'
 
 
 Base.metadata.create_all(engine)
 
 # with Session() as session:
-#     try:
-#         user: User = session.query(User).filter(
-#             User.tg_id == str(585896156)).first()
-#         # Если дельта есть и не просрочилась, выдаем ее
-#         now = datetime.datetime.now(tz=config.tg_bot.TIMEZONE).replace(
-#             tzinfo=None)
-#         if user.delta_end and now < user.delta_end:
-#             print(user.delta_end)
-#         # Присваиваем и возвращаем новую дельту
-#         user_with_delta = session.query(User).filter(
-#             User.delta_num.is_not(None)).all()
-#         used_num = [x.delta_num for x in user_with_delta]
-#         print(used_num)
-#     except Exception as err:
-#         raise err
-# Заполнение пустой базы
-# index, text, parent_id, is_with_children
+#     user = session.query(User).filter(User.id == 8).one()
+
+

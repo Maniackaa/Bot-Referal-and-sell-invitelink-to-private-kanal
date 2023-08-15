@@ -3,11 +3,13 @@ from aiogram.types import KeyboardButton, ReplyKeyboardMarkup,\
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 
 
+
 kb1 = {
-    'Оплатить': 'pay',
-    'Проверить подписку': 'check_expire',
-    'Демо доступ': 'demo',
-    'Реферальная программа': 'ref',
+    '🚀 Оплатить': 'pay',
+    '👀 Проверить подписку': 'check_expire',
+    '⏳ Демо доступ': 'demo',
+    '💰 Реферальная программа': 'ref',
+    '✋ Поддержка': 'support',
 }
 
 
@@ -46,3 +48,9 @@ ref_kb_btn = {
     # 'Список рефералов': 'ref_list',
 }
 ref_kb = custom_kb(1, ref_kb_btn)
+
+# channels = get_channels()
+# channel_kb_btn = {}
+# for channel in channels:
+#     channel_kb_btn[channel.title] = f'channel:{channel.id}'
+# channel_kb = custom_kb(1, channel_kb_btn)

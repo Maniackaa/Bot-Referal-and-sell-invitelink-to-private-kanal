@@ -10,7 +10,8 @@ import logging.config
 
 from keyboards.keyboards import start_kb
 from lexicon.lexicon import LEXICON_RU
-from services.db_func import find_expired
+from services.db_func import find_expired, get_channel_from_id, \
+    delete_subscribe_and_ban
 from services.redis_func import get_used_nums, del_used_nums
 
 logging.config.dictConfig(LOGGING_CONFIG)
@@ -29,28 +30,20 @@ async def redis_cleaner(life=24):
         for num, addet_time in all_nums.items():
             if now > addet_time + life_delta:
                 print('Пора удалять')
-                del_used_nums(0)
+                del_used_nums(num)
             else:
-                print('осталось жить', addet_time + life_delta - now)
+                logger.debug(f'{num} осталось жить {addet_time + life_delta - now}')
         await asyncio.sleep(10 * 60)
 
 
 async def checker(bot):
     """Находит список у кого просрочен доступ и банит их"""
     while True:
-        to_ban = find_expired()
-        logger.debug(f'Список просроченных: {to_ban}')
-        if to_ban:
-            for user in to_ban:
+        expires = find_expired()
+        if expires:
+            for expire in expires:
                 try:
-                    user.set('member_expire', None)
-                    text_after_expire = LEXICON_RU['text_after_expire']
-                    await bot.ban_chat_member(chat_id=conf.tg_bot.GROUP_ID,
-                                              user_id=user.tg_id)
-                    await bot.send_message(chat_id=user.tg_id,
-                                           text=text_after_expire,
-                                           reply_markup=start_kb)
-                    logger.debug(f'Пользователь {user.tg_id} удален')
+                    await delete_subscribe_and_ban(expire, bot)
                 except Exception as err:
                     logger.error(f'Ошибка {err}')
         await asyncio.sleep(1 * 60)

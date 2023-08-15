@@ -11,9 +11,10 @@ from aiogram.utils.deep_linking import create_start_link, decode_payload
 from config_data.conf import LOGGING_CONFIG, conf
 import logging.config
 
-from keyboards.keyboards import pay_kb1, pay_kb2, start_kb
+from keyboards.keyboards import pay_kb1, pay_kb2, start_kb, custom_kb
 from lexicon.lexicon import LEXICON_RU, TARIFFS
-from services.db_func import get_new_delta, check_user
+from services.db_func import get_new_delta, check_user, get_channels, \
+    update_subscribe
 from services.redis_func import add_num_to_used_nums
 from services.referal import update_referral_buy
 from services.wallet import get_wallet_transactions
@@ -27,6 +28,7 @@ router: Router = Router()
 
 class FSMPay(StatesGroup):
     pay = State()
+    select_channel = State()
 
 
 @router.callback_query(Text(text='pay'))
@@ -77,7 +79,7 @@ async def pay(callback: CallbackQuery, state: FSMContext, bot: Bot):
             tarif = tarif_num
         else:
             print(tarif_num, 'Транзакция НЕ найдена')
-
+    tarif = 1
     if tarif:
         await callback.message.answer('Ваша оплата прошла успешно')
         await callback.message.delete()
@@ -87,25 +89,42 @@ async def pay(callback: CallbackQuery, state: FSMContext, bot: Bot):
         # Очищаем занятое число в базе
         user.set('delta_num', None)
         user.set('delta_end', None)
-        # Определяем срок ссылки
-        if user.member_expire:
-            new_expire = user.member_expire + datetime.timedelta(days=days[tarif - 1])
-        else:
-            new_expire = datetime.datetime.now(tz=conf.tg_bot.TIMEZONE) + datetime.timedelta(days=days[tarif - 1])
-        user.set('member_expire', new_expire)
-        await bot.unban_chat_member(chat_id=conf.tg_bot.GROUP_ID,
-                                    user_id=callback.from_user.id,
-                                    only_if_banned=True)
-        link: ChatInviteLink = await bot.create_chat_invite_link(
-            chat_id=conf.tg_bot.GROUP_ID,
-            creates_join_request=False,
-            expire_date=new_expire,
-            member_limit=1)
-        await callback.message.answer(f'Ваша ссылка (до {link.expire_date.astimezone(tz=conf.tg_bot.TIMEZONE)}):\n{link.invite_link}')
         # Обрабатываем реферральную систему
         if user.referral:
             logger.debug(f'Есть реферал: {user.referral}')
             update_referral_buy(user)
+        # Выбор подписки для продления:
+        text = 'Выберите канал для продления подписки:\n'
+        channels = get_channels()
+        text_channels = [
+            f'<b>{ch.title}</b>\n{ch.description}\n\n'
+            for ch in channels]
+        text += ''.join(text_channels)
+        channels = get_channels()
+        channel_kb_btn = {}
+        for channel in channels:
+            channel_kb_btn[channel.title] = f'channel:{channel.id}'
+        channel_kb = custom_kb(1, channel_kb_btn)
+        await callback.message.answer(text, reply_markup=channel_kb)
+        await state.set_state(FSMPay.select_channel)
+        await state.update_data(tarif=tarif)
+
+        # Определяем срок ссылки
+        # if user.member_expire:
+        #     new_expire = user.member_expire + datetime.timedelta(days=days[tarif - 1])
+        # else:
+        #     new_expire = datetime.datetime.now(tz=conf.tg_bot.TIMEZONE) + datetime.timedelta(days=days[tarif - 1])
+        # user.set('member_expire', new_expire)
+        # await bot.unban_chat_member(chat_id=conf.tg_bot.GROUP_ID,
+        #                             user_id=callback.from_user.id,
+        #                             only_if_banned=True)
+        # link: ChatInviteLink = await bot.create_chat_invite_link(
+        #     chat_id=conf.tg_bot.GROUP_ID,
+        #     creates_join_request=False,
+        #     expire_date=new_expire,
+        #     member_limit=1)
+        # await callback.message.answer(f'Ваша ссылка (до {link.expire_date.astimezone(tz=conf.tg_bot.TIMEZONE)}):\n{link.invite_link}')
+
 
     else:
         await callback.message.answer('Транзакция не найдена')
@@ -116,4 +135,27 @@ async def pay(callback: CallbackQuery, state: FSMContext, bot: Bot):
         await callback.message.delete()
 
 
-
+@router.callback_query(Text(startswith='channel:'))
+async def pay(callback: CallbackQuery, state: FSMContext, bot: Bot):
+    data = await state.get_data()
+    tarif = data.get('tarif')
+    if tarif:
+        channel_pk = int(callback.data.split('channel:')[1])
+        print(channel_pk)
+        subscribe, channel = update_subscribe(check_user(callback.from_user.id), channel_pk, tarif)
+        await state.clear()
+        user = check_user(callback.from_user.id)
+        await bot.unban_chat_member(chat_id=channel.channel_id,
+                                    user_id=user.tg_id,
+                                    only_if_banned=True)
+        link: ChatInviteLink = await bot.create_chat_invite_link(
+            chat_id=channel.channel_id,
+            creates_join_request=False,
+            expire_date=subscribe.expire,
+            member_limit=1)
+        text = f'Вы обновили подписку на канал {channel.title} до {subscribe.expire}\n' \
+               f'Ваша ссылка: {link.invite_link}'
+        await callback.message.delete()
+        await callback.message.answer(text)
+    else:
+        await callback.message.answer('Произошла ошибка')
