@@ -68,7 +68,7 @@ async def get_demo(callback: CallbackQuery, state: FSMContext, bot: Bot):
             kb_builder.row(url_button_1)
             keyboard = kb_builder.as_markup()
             await callback.message.answer(text, reply_markup=keyboard)
-            await bot.unban_chat_member(chat_id=conf.tg_bot.GROUP_ID,
+            await bot.unban_chat_member(chat_id=channel.channel_id,
                                         user_id=callback.from_user.id,
                                         only_if_banned=True)
             # user.set('demo_expire', link.expire_date)
