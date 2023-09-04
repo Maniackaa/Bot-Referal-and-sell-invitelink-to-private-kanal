@@ -126,7 +126,7 @@ async def pay(callback: CallbackQuery, state: FSMContext, bot: Bot):
             member_limit=1)
         text = f'Вы обновили подписку на канал {channel.title} до {subscribe.expire}\n' \
                f'Ваша ссылка: {link.invite_link}'
-        await callback.message.delete()
+        # await callback.message.delete()
         await callback.message.answer(text)
 
     else:
